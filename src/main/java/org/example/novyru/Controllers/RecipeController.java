@@ -1,21 +1,24 @@
 package org.example.novyru.Controllers;
 
 import org.example.novyru.DTOs.RecipeDto;
+import org.example.novyru.Services.RecipeService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 public class RecipeController {
-    @PostMapping("/recipe")
-    public String addRecipe(@RequestBody RecipeDto recipeDto){
-        return "Created";
+
+    private final RecipeService recipeService;
+
+    public RecipeController(RecipeService recipeService){
+        this.recipeService = recipeService;
+
     }
 
-    @PutMapping("/recipe")
-    public String updatedRecipe(@RequestBody RecipeDto recipeDto){
-        return "Updated";
+    @GetMapping("/recipes")
+    public List<RecipeDto> getRecipes() {
+        return recipeService.getRecipes();
     }
 }
