@@ -1,7 +1,6 @@
 package org.example.novyru.Components;
 
 import org.example.novyru.DTOs.RecipeDto;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -13,17 +12,13 @@ public class ExternalRecipeApi {
 
     private final RestClient restClient;
 
-    public ExternalRecipeApi(
-            RestClient.Builder builder,
-            @Value("${external.api.key}") String apiKey) {
-
+    public ExternalRecipeApi(RestClient.Builder builder) {
         this.restClient = builder
-                .baseUrl("https://external-api.com")
-                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .baseUrl("https://recipeapi.io/api/v1/recipes?lang=en")
                 .build();
     }
-    public List<RecipeDto> getRecipes() {
 
+    public List<RecipeDto> getRecipes() {
         return restClient
                 .get()
                 .uri("/recipes")
