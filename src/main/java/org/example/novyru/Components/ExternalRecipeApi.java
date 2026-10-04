@@ -12,8 +12,8 @@ public class ExternalRecipeApi {
 
     private final RestClient restClient;
 
-    public ExternalRecipeApi(RestClient.Builder builder) {
-        this.restClient = builder
+    public ExternalRecipeApi() {
+        this.restClient = RestClient.builder()
                 .baseUrl("https://recipeapi.io/api/v1/recipes?lang=en")
                 .build();
     }
