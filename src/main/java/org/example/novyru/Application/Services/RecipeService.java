@@ -1,7 +1,6 @@
-package org.example.novyru.Services;
+package org.example.novyru.Application.Services;
 
-import org.example.novyru.Components.ExternalRecipeApi;
-import org.example.novyru.DTOs.RecipeDto;
+import org.example.novyru.Application.DTOs.RecipeDto;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,9 +8,9 @@ import java.util.List;
 @Service
 public class RecipeService {
 
-    private final ExternalRecipeApi externalRecipeApi;
+    private final ExternalRecipeService externalRecipeApi;
 
-    public RecipeService(ExternalRecipeApi externalRecipeApi) {
+    public RecipeService(ExternalRecipeService externalRecipeApi) {
         this.externalRecipeApi = externalRecipeApi;
     }
 

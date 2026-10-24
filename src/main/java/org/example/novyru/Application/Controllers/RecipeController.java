@@ -1,7 +1,7 @@
-package org.example.novyru.Controllers;
+package org.example.novyru.Application.Controllers;
 
-import org.example.novyru.DTOs.RecipeDto;
-import org.example.novyru.Services.RecipeService;
+import org.example.novyru.Application.DTOs.RecipeDto;
+import org.example.novyru.Application.Services.RecipeService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +20,6 @@ public class RecipeController {
 
     @GetMapping("/recipes")
     public List<RecipeDto> getRecipes() {
-        return recipeService.getRecipes();
+            return recipeService.getRecipes();
     }
 }

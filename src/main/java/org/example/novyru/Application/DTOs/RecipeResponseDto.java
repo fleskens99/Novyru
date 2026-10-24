@@ -1,10 +1,10 @@
-package org.example.novyru.DTOs;
+package org.example.novyru.Application.DTOs;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class RecipeResponse {
+public class RecipeResponseDto {
     private List<RecipeDto> data;
 }

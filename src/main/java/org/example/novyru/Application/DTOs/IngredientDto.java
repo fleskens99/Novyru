@@ -1,10 +1,9 @@
-package org.example.novyru.DTOs;
+package org.example.novyru.Application.DTOs;
 
 import lombok.Data;
 
 @Data
 public class IngredientDto {
-
     private int id;
     private String name;
     private String category;

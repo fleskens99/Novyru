@@ -1,4 +1,4 @@
-package org.example.novyru.DTOs;
+package org.example.novyru.Application.DTOs;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

@@ -1,19 +1,19 @@
-package org.example.novyru.Components;
+package org.example.novyru.Application.Services;
 
-import org.example.novyru.DTOs.RecipeDto;
+import org.example.novyru.Application.DTOs.RecipeDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.example.novyru.DTOs.RecipeResponse;
+import org.example.novyru.Application.DTOs.RecipeResponseDto;
 
 import java.util.List;
 
 @Component
-public class ExternalRecipeApi {
+public class ExternalRecipeService {
 
     private final RestClient restClient;
 
-    public ExternalRecipeApi(
+    public ExternalRecipeService(
             @Value("${external.api.key}") String apiKey) {
 
         this.restClient = RestClient.builder()
@@ -24,11 +24,11 @@ public class ExternalRecipeApi {
 
     public List<RecipeDto> getRecipes() {
 
-        RecipeResponse response = restClient
+        RecipeResponseDto response = restClient
                 .get()
                 .uri("/recipes?lang=en")
                 .retrieve()
-                .body(RecipeResponse.class);
+                .body(RecipeResponseDto.class);
 
         return response.getData();
     }
