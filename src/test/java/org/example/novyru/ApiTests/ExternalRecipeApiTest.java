@@ -1,5 +1,5 @@
 
-package org.example.novyru;
+package org.example.novyru.ApiTests;
 
 import org.example.novyru.Application.Services.ExternalRecipeService;
 import org.example.novyru.Application.DTOs.RecipeDto;
