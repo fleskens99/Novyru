@@ -1,8 +1,8 @@
 package org.example.novyru.Application.Exceptions;
 
-import org.example.novyru.Domain.Exceptions.DuplicateEmailException;
-import org.example.novyru.Domain.Exceptions.InvalidCredentialsException;
-import org.example.novyru.Domain.Exceptions.InvalidRegistrationException;
+import org.example.novyru.Domain.Exceptions.User.DuplicateEmailException;
+import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
+import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
