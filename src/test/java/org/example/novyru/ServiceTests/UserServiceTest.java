@@ -12,6 +12,7 @@ import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
 import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 
+import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,8 @@ class UserServiceTest {
 
     @Mock
     private IUserRepository userRepository;
+    @Mock
+    private IUserRules userRules;
 
     private UserService userService;
 
@@ -40,7 +43,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, userRules);
     }
 
     // -------------------------------
