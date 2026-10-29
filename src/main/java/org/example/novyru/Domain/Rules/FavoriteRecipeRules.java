@@ -4,7 +4,9 @@ import org.example.novyru.Domain.Exceptions.InvalidIdException;
 import org.example.novyru.Domain.Exceptions.Recipe.RecipeAlreadyExistsException;
 import org.example.novyru.Domain.Exceptions.Recipe.RecipeNotFoundException;
 import org.example.novyru.Domain.Interfaces.Rules.IFavoriteRecipeRules;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class FavoriteRecipeRules implements IFavoriteRecipeRules {
 
     private FavoriteRecipeRules(){
