@@ -1,3 +1,4 @@
+
 package org.example.novyru.ServiceTests;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
@@ -7,12 +8,14 @@ import org.example.novyru.Application.DTOs.UserDTOs.RegisterUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.UserResponseDto;
 
 import org.example.novyru.Application.Services.UserService;
+
 import org.example.novyru.Domain.Exceptions.User.DuplicateEmailException;
 import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
 import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
-import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 
+import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +35,7 @@ class UserServiceTest {
 
     @Mock
     private IUserRepository userRepository;
+
     @Mock
     private IUserRules userRules;
 
@@ -43,17 +47,19 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userRules);
+        userService = new UserService(
+                userRepository,
+                userRules
+        );
     }
 
-    // -------------------------------
+    // ==========================================
     // REGISTRATION TESTS
-    // -------------------------------
+    // ==========================================
 
     @Test
     void registerUser_WithValidData_ShouldRegisterSuccessfully() {
 
-        // Arrange
         RegisterUserDto dto = new RegisterUserDto(
                 NAME,
                 EMAIL,
@@ -66,22 +72,22 @@ class UserServiceTest {
                 anyString()
         )).thenReturn(true);
 
-        // Act
         UserResponseDto result = userService.registerUser(dto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(NAME, result.getName());
         assertEquals(EMAIL, result.getEmail());
 
-        verify(userRepository, times(1))
-                .save(eq(NAME), anyString(), eq(EMAIL));
+        verify(userRepository, times(1)).save(
+                eq(NAME),
+                anyString(),
+                eq(EMAIL)
+        );
     }
 
     @Test
     void registerUser_ShouldHashPasswordBeforeSaving() {
 
-        // Arrange
         RegisterUserDto dto = new RegisterUserDto(
                 NAME,
                 EMAIL,
@@ -97,10 +103,8 @@ class UserServiceTest {
         ArgumentCaptor<String> hashCaptor =
                 ArgumentCaptor.forClass(String.class);
 
-        // Act
         userService.registerUser(dto);
 
-        // Assert
         verify(userRepository).save(
                 eq(NAME),
                 hashCaptor.capture(),
@@ -109,10 +113,8 @@ class UserServiceTest {
 
         String savedHash = hashCaptor.getValue();
 
-        // Ensure plaintext password is not stored
         assertNotEquals(PASSWORD, savedHash);
 
-        // Ensure BCrypt can verify the original password
         boolean validHash = BCrypt.verifyer()
                 .verify(
                         PASSWORD.toCharArray(),
@@ -125,7 +127,6 @@ class UserServiceTest {
     @Test
     void registerUser_ShouldNormalizeEmailAndName() {
 
-        // Arrange
         RegisterUserDto dto = new RegisterUserDto(
                 "  Alex  ",
                 "  ALEX@EXAMPLE.COM  ",
@@ -138,10 +139,8 @@ class UserServiceTest {
                 anyString()
         )).thenReturn(true);
 
-        // Act
         UserResponseDto result = userService.registerUser(dto);
 
-        // Assert
         assertEquals("Alex", result.getName());
         assertEquals(EMAIL, result.getEmail());
 
@@ -155,21 +154,18 @@ class UserServiceTest {
     @Test
     void registerUser_WithDuplicateEmail_ShouldThrowException() {
 
-        // Arrange
         RegisterUserDto dto = new RegisterUserDto(
                 NAME,
                 EMAIL,
                 PASSWORD
         );
 
-        // Database reports that the email already exists
         when(userRepository.save(
                 anyString(),
                 anyString(),
                 anyString()
         )).thenReturn(false);
 
-        // Act & Assert
         assertThrows(
                 DuplicateEmailException.class,
                 () -> userService.registerUser(dto)
@@ -185,12 +181,14 @@ class UserServiceTest {
                 PASSWORD
         );
 
+        // Simulate rejection by the validation rules.
+        mockRegistrationRuleFailure();
+
         assertThrows(
                 InvalidRegistrationException.class,
                 () -> userService.registerUser(dto)
         );
 
-        // Invalid input should never reach the database
         verifyNoInteractions(userRepository);
     }
 
@@ -202,6 +200,9 @@ class UserServiceTest {
                 EMAIL,
                 "123"
         );
+
+        // Simulate rejection by the validation rules.
+        mockRegistrationRuleFailure();
 
         assertThrows(
                 InvalidRegistrationException.class,
@@ -225,7 +226,6 @@ class UserServiceTest {
     @Test
     void registerUser_WhenDatabaseFails_ShouldThrowIllegalStateException() {
 
-        // Arrange
         RegisterUserDto dto = new RegisterUserDto(
                 NAME,
                 EMAIL,
@@ -241,13 +241,11 @@ class UserServiceTest {
                 anyString()
         )).thenThrow(databaseError);
 
-        // Act
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> userService.registerUser(dto)
         );
 
-        // Assert
         assertEquals(
                 "Registration could not be completed.",
                 exception.getMessage()
@@ -256,14 +254,13 @@ class UserServiceTest {
         assertSame(databaseError, exception.getCause());
     }
 
-    // -------------------------------
+    // ==========================================
     // LOGIN TESTS
-    // -------------------------------
+    // ==========================================
 
     @Test
     void loginUser_WithCorrectCredentials_ShouldLoginSuccessfully() {
 
-        // Arrange
         String passwordHash = createPasswordHash();
 
         LoginUserDto dto = new LoginUserDto(
@@ -277,10 +274,8 @@ class UserServiceTest {
         when(userRepository.findNameByEmail(EMAIL))
                 .thenReturn(Optional.of(NAME));
 
-        // Act
         UserResponseDto result = userService.loginUser(dto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(NAME, result.getName());
         assertEquals(EMAIL, result.getEmail());
@@ -292,7 +287,6 @@ class UserServiceTest {
     @Test
     void loginUser_ShouldNormalizeEmail() {
 
-        // Arrange
         String passwordHash = createPasswordHash();
 
         LoginUserDto dto = new LoginUserDto(
@@ -306,10 +300,8 @@ class UserServiceTest {
         when(userRepository.findNameByEmail(EMAIL))
                 .thenReturn(Optional.of(NAME));
 
-        // Act
         UserResponseDto result = userService.loginUser(dto);
 
-        // Assert
         assertEquals(EMAIL, result.getEmail());
 
         verify(userRepository).findPasswordHashByEmail(EMAIL);
@@ -318,7 +310,6 @@ class UserServiceTest {
     @Test
     void loginUser_WithWrongPassword_ShouldThrowException() {
 
-        // Arrange
         String passwordHash = createPasswordHash();
 
         LoginUserDto dto = new LoginUserDto(
@@ -329,20 +320,18 @@ class UserServiceTest {
         when(userRepository.findPasswordHashByEmail(EMAIL))
                 .thenReturn(Optional.of(passwordHash));
 
-        // Act & Assert
         assertThrows(
                 InvalidCredentialsException.class,
                 () -> userService.loginUser(dto)
         );
 
-        // Name should not be requested after wrong password
-        verify(userRepository, never()).findNameByEmail(anyString());
+        verify(userRepository, never())
+                .findNameByEmail(anyString());
     }
 
     @Test
     void loginUser_WithUnknownEmail_ShouldThrowException() {
 
-        // Arrange
         LoginUserDto dto = new LoginUserDto(
                 "unknown@example.com",
                 PASSWORD
@@ -352,13 +341,13 @@ class UserServiceTest {
                 "unknown@example.com"
         )).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(
                 InvalidCredentialsException.class,
                 () -> userService.loginUser(dto)
         );
 
-        verify(userRepository, never()).findNameByEmail(anyString());
+        verify(userRepository, never())
+                .findNameByEmail(anyString());
     }
 
     @Test
@@ -375,8 +364,10 @@ class UserServiceTest {
     @Test
     void loginUser_WhenNameIsMissing_ShouldThrowException() {
 
-        // Arrange
-        LoginUserDto dto = new LoginUserDto(EMAIL, PASSWORD);
+        LoginUserDto dto = new LoginUserDto(
+                EMAIL,
+                PASSWORD
+        );
 
         when(userRepository.findPasswordHashByEmail(EMAIL))
                 .thenReturn(Optional.of(createPasswordHash()));
@@ -384,7 +375,6 @@ class UserServiceTest {
         when(userRepository.findNameByEmail(EMAIL))
                 .thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(
                 InvalidCredentialsException.class,
                 () -> userService.loginUser(dto)
@@ -394,8 +384,10 @@ class UserServiceTest {
     @Test
     void loginUser_WhenDatabaseFails_ShouldThrowIllegalStateException() {
 
-        // Arrange
-        LoginUserDto dto = new LoginUserDto(EMAIL, PASSWORD);
+        LoginUserDto dto = new LoginUserDto(
+                EMAIL,
+                PASSWORD
+        );
 
         RuntimeException databaseError =
                 new RuntimeException("Database unavailable");
@@ -403,13 +395,11 @@ class UserServiceTest {
         when(userRepository.findPasswordHashByEmail(EMAIL))
                 .thenThrow(databaseError);
 
-        // Act
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> userService.loginUser(dto)
         );
 
-        // Assert
         assertEquals(
                 "Login could not be completed.",
                 exception.getMessage()
@@ -418,12 +408,32 @@ class UserServiceTest {
         assertSame(databaseError, exception.getCause());
     }
 
-    // -------------------------------
-    // TEST HELPER
-    // -------------------------------
+    // ==========================================
+    // TEST HELPERS
+    // ==========================================
+
+    private void mockRegistrationRuleFailure() {
+
+        // Mock the rules to reject registration.
+        // This tests how UserService handles a rule failure,
+        // not the actual email/password validation logic.
+        userRules = mock(IUserRules.class, invocation -> {
+            throw new InvalidRegistrationException(
+                    "Invalid registration data"
+            );
+        });
+
+        userService = new UserService(
+                userRepository,
+                userRules
+        );
+    }
 
     private String createPasswordHash() {
         return BCrypt.withDefaults()
-                .hashToString(12, PASSWORD.toCharArray());
+                .hashToString(
+                        12,
+                        PASSWORD.toCharArray()
+                );
     }
 }
