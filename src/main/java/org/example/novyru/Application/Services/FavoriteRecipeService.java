@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IFavoriteRecipeRepository;
 import org.example.novyru.Domain.Interfaces.Rules.IFavoriteRecipeRules;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 @RequiredArgsConstructor
 public class FavoriteRecipeService {
 

@@ -3,10 +3,12 @@ package org.example.novyru.Domain.Rules;
 
 import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
+@Component
 public final class UserRules implements IUserRules {
 
     private static final Pattern EMAIL_PATTERN =

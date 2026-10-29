@@ -14,9 +14,11 @@ import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
+import org.springframework.stereotype.Component;
 
 import java.util.Locale;
 
+@Component
 @RequiredArgsConstructor
 public class UserService {
 
