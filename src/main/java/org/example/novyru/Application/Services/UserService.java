@@ -2,19 +2,18 @@
 package org.example.novyru.Application.Services;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
-
 import lombok.RequiredArgsConstructor;
 
 import org.example.novyru.Application.DTOs.UserDTOs.LoginUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.RegisterUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.UserResponseDto;
 
-import org.example.novyru.Domain.Exceptions.DuplicateEmailException;
-import org.example.novyru.Domain.Exceptions.InvalidCredentialsException;
-import org.example.novyru.Domain.Exceptions.InvalidRegistrationException;
+import org.example.novyru.Domain.Exceptions.User.DuplicateEmailException;
+import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
+import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 
-import org.example.novyru.Domain.Interfaces.IUserRepository;
-import org.example.novyru.Domain.Rules.UserRules;
+import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
+import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
 
 import java.util.Locale;
 
@@ -22,6 +21,7 @@ import java.util.Locale;
 public class UserService {
 
     private final IUserRepository userRepository;
+    private final IUserRules userRules;
 
     private static final int BCRYPT_COST = 12;
 
@@ -29,7 +29,7 @@ public class UserService {
     public UserResponseDto registerUser(RegisterUserDto dto) {
 
         try {
-
+            // Validate registration DTO.
             if (dto == null) {
                 throw new InvalidRegistrationException(
                         "Registration data is required."
@@ -41,8 +41,8 @@ public class UserService {
                     ? null
                     : normalizeEmail(dto.getEmail());
 
-            // Validate registration using Domain rules.
-            UserRules.validateRegistration(
+            // Validate using Domain rules.
+            userRules.validateRegistration(
                     dto.getName(),
                     email,
                     dto.getPassword()
@@ -57,16 +57,18 @@ public class UserService {
                             dto.getPassword().toCharArray()
                     );
 
-            // Save through the Domain interface.
+            // Save through the Domain repository interface.
             boolean saved = userRepository.save(
                     name,
                     passwordHash,
                     email
             );
 
-            // Domain business rule: no duplicate email.
+            // Check for duplicate email.
             if (!saved) {
-                throw new DuplicateEmailException();
+                throw new DuplicateEmailException(
+                        "Please use another email address."
+                );
             }
 
             // Never return the password hash.
@@ -75,12 +77,12 @@ public class UserService {
         } catch (DuplicateEmailException |
                  InvalidRegistrationException e) {
 
-            // Expected business failures.
+            // Expected Domain exceptions.
             throw e;
 
         } catch (RuntimeException e) {
 
-            // Unexpected errors, including database failures.
+            // Unexpected technical failure.
             throw new IllegalStateException(
                     "Registration could not be completed.",
                     e
@@ -92,7 +94,6 @@ public class UserService {
     public UserResponseDto loginUser(LoginUserDto dto) {
 
         try {
-
             // Validate login input.
             if (dto == null ||
                     dto.getEmail() == null ||
@@ -100,17 +101,24 @@ public class UserService {
                     dto.getPassword() == null ||
                     dto.getPassword().isEmpty()) {
 
-                throw new InvalidCredentialsException();
+                throw new InvalidCredentialsException(
+                        "Please provide valid credentials."
+                );
             }
 
+            // Normalize email.
             String email = normalizeEmail(dto.getEmail());
 
-            // Retrieve the stored password hash.
+            // Retrieve stored password hash.
             String passwordHash = userRepository
                     .findPasswordHashByEmail(email)
-                    .orElseThrow(InvalidCredentialsException::new);
+                    .orElseThrow(() ->
+                            new InvalidCredentialsException(
+                                    "Please try again."
+                            )
+                    );
 
-            // Verify the entered password.
+            // Verify password with BCrypt.
             boolean validPassword = BCrypt.verifyer()
                     .verify(
                             dto.getPassword().toCharArray(),
@@ -118,25 +126,31 @@ public class UserService {
                     ).verified;
 
             if (!validPassword) {
-                throw new InvalidCredentialsException();
+                throw new InvalidCredentialsException(
+                        "Please try again."
+                );
             }
 
-            // Retrieve the user's name.
+            // Retrieve user name.
             String name = userRepository
                     .findNameByEmail(email)
-                    .orElseThrow(InvalidCredentialsException::new);
+                    .orElseThrow(() ->
+                            new InvalidCredentialsException(
+                                    "Please try again."
+                            )
+                    );
 
             // Return safe user information.
             return new UserResponseDto(name, email);
 
         } catch (InvalidCredentialsException e) {
 
-            // Expected authentication failure.
+            // Expected Domain exception.
             throw e;
 
         } catch (RuntimeException e) {
 
-            // Unexpected errors, including database failures.
+            // Unexpected technical failure.
             throw new IllegalStateException(
                     "Login could not be completed.",
                     e
@@ -146,7 +160,6 @@ public class UserService {
 
     // NORMALIZE EMAIL
     private String normalizeEmail(String email) {
-
         return email.trim().toLowerCase(Locale.ROOT);
     }
 }

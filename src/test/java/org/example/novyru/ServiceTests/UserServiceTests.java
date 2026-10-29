@@ -7,10 +7,10 @@ import org.example.novyru.Application.DTOs.UserDTOs.RegisterUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.UserResponseDto;
 
 import org.example.novyru.Application.Services.UserService;
-import org.example.novyru.Domain.Exceptions.DuplicateEmailException;
-import org.example.novyru.Domain.Exceptions.InvalidCredentialsException;
-import org.example.novyru.Domain.Exceptions.InvalidRegistrationException;
-import org.example.novyru.Domain.Interfaces.IUserRepository;
+import org.example.novyru.Domain.Exceptions.User.DuplicateEmailException;
+import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
+import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
+import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,4 @@
-
-package org.example.novyru.Domain.Exceptions;
+package org.example.novyru.Domain.Exceptions.User;
 
 public class InvalidRegistrationException extends RuntimeException {
 

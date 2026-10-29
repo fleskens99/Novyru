@@ -1,7 +1,6 @@
-
 package org.example.novyru.Infrastructure.Repositories;
 
-import org.example.novyru.Domain.Interfaces.IUserRepository;
+import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 
 import org.jdbi.v3.core.Jdbi;
 

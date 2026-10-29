@@ -1,5 +1,5 @@
 
-package org.example.novyru.Domain.Interfaces;
+package org.example.novyru.Domain.Interfaces.Repositories;
 
 import java.util.Optional;
 

@@ -1,27 +1,25 @@
 
 package org.example.novyru.Domain.Rules;
 
-import org.example.novyru.Domain.Exceptions.InvalidRegistrationException;
+import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
+import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
 
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-public final class UserRules {
+public final class UserRules implements IUserRules {
 
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
-    private UserRules() {
-        // Prevent creating instances of this utility class.
-    }
-
-    public static void validateRegistration(
+    @Override
+    public void validateRegistration(
             String name,
             String email,
             String password
     ) {
 
-        // Name must be between 2 and 80 characters.
+        // Validate name.
         if (name == null ||
                 name.trim().length() < 2 ||
                 name.trim().length() > 80) {
@@ -31,7 +29,7 @@ public final class UserRules {
             );
         }
 
-        // Email must have a valid basic format.
+        // Validate email.
         if (email == null ||
                 email.length() > 254 ||
                 !EMAIL_PATTERN.matcher(email).matches()) {
@@ -41,7 +39,7 @@ public final class UserRules {
             );
         }
 
-        // Password must meet the minimum length.
+        // Validate password length.
         if (password == null || password.length() < 12) {
 
             throw new InvalidRegistrationException(
@@ -49,11 +47,12 @@ public final class UserRules {
             );
         }
 
-        // BCrypt only accepts up to 72 password bytes.
+        // Validate BCrypt password byte limit.
         int passwordBytes = password
                 .getBytes(StandardCharsets.UTF_8).length;
 
         if (passwordBytes > 72) {
+
             throw new InvalidRegistrationException(
                     "Password cannot exceed 72 UTF-8 bytes."
             );
