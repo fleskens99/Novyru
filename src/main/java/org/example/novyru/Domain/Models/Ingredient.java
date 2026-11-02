@@ -1,4 +1,4 @@
-package org.example.novyru.Domain.Entities;
+package org.example.novyru.Domain.Models;
 
 import lombok.Data;
 

@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.example.novyru.Application.DTOs.UserDTOs.LoginUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.RegisterUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.UserResponseDto;
+import org.example.novyru.Application.Mappers.UserDtoMapper;
+
+import org.example.novyru.Domain.Models.User;
 
 import org.example.novyru.Domain.Exceptions.User.DuplicateEmailException;
 import org.example.novyru.Domain.Exceptions.User.InvalidCredentialsException;
@@ -14,6 +17,7 @@ import org.example.novyru.Domain.Exceptions.User.InvalidRegistrationException;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
 import org.example.novyru.Domain.Interfaces.Rules.IUserRules;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
@@ -24,6 +28,7 @@ public class UserService {
 
     private final IUserRepository userRepository;
     private final IUserRules userRules;
+    private final UserDtoMapper userDtoMapper;
 
     private static final int BCRYPT_COST = 12;
 
@@ -50,8 +55,6 @@ public class UserService {
                     dto.getPassword()
             );
 
-            String name = dto.getName().trim();
-
             // Hash the plaintext password.
             String passwordHash = BCrypt.withDefaults()
                     .hashToString(
@@ -59,12 +62,15 @@ public class UserService {
                             dto.getPassword().toCharArray()
                     );
 
-            // Save through the Domain repository interface.
-            boolean saved = userRepository.save(
-                    name,
-                    passwordHash,
-                    email
+            // Application DTO -> Domain Model
+            User user = userDtoMapper.toModel(
+                    dto,
+                    email,
+                    passwordHash
             );
+
+            // Save through Domain repository interface.
+            boolean saved = userRepository.save(user);
 
             // Check for duplicate email.
             if (!saved) {
@@ -73,8 +79,8 @@ public class UserService {
                 );
             }
 
-            // Never return the password hash.
-            return new UserResponseDto(name, email);
+            // Domain Model -> Safe response DTO
+            return userDtoMapper.toResponse(user);
 
         } catch (DuplicateEmailException |
                  InvalidRegistrationException e) {
@@ -111,9 +117,9 @@ public class UserService {
             // Normalize email.
             String email = normalizeEmail(dto.getEmail());
 
-            // Retrieve stored password hash.
-            String passwordHash = userRepository
-                    .findPasswordHashByEmail(email)
+            // Retrieve Domain User model.
+            User user = userRepository
+                    .findByEmail(email)
                     .orElseThrow(() ->
                             new InvalidCredentialsException(
                                     "Please try again."
@@ -124,7 +130,7 @@ public class UserService {
             boolean validPassword = BCrypt.verifyer()
                     .verify(
                             dto.getPassword().toCharArray(),
-                            passwordHash
+                            user.getPasswordHash()
                     ).verified;
 
             if (!validPassword) {
@@ -133,17 +139,8 @@ public class UserService {
                 );
             }
 
-            // Retrieve user name.
-            String name = userRepository
-                    .findNameByEmail(email)
-                    .orElseThrow(() ->
-                            new InvalidCredentialsException(
-                                    "Please try again."
-                            )
-                    );
-
-            // Return safe user information.
-            return new UserResponseDto(name, email);
+            // Domain Model -> Safe response DTO
+            return userDtoMapper.toResponse(user);
 
         } catch (InvalidCredentialsException e) {
 

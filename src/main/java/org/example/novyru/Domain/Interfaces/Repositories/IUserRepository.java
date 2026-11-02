@@ -1,17 +1,13 @@
 
 package org.example.novyru.Domain.Interfaces.Repositories;
 
+import org.example.novyru.Domain.Models.User;
+
 import java.util.Optional;
 
 public interface IUserRepository {
 
-    Optional<String> findPasswordHashByEmail(String email);
+    Optional<User> findByEmail(String email);
 
-    Optional<String> findNameByEmail(String email);
-
-    boolean save(
-            String name,
-            String passwordHash,
-            String email
-    );
+    boolean save(User user);
 }
