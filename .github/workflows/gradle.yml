@@ -30,8 +30,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # 4. Build project and run tests
+      # 4. Run tests
+      - name: Run Tests
+        env:
+          RECIPE_API_KEY: ${{ secrets.RECIPE_API_KEY }}
+        run: bash ./gradlew clean test --stacktrace
+
+      # 5. Build project
       - name: Build with Gradle
         env:
           RECIPE_API_KEY: ${{ secrets.RECIPE_API_KEY }}
-        run: bash ./gradlew clean build --stacktrace
+        run: bash ./gradlew build -x test --stacktrace

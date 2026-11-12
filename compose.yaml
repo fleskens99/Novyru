@@ -2,17 +2,21 @@ services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+
     environment:
       MYSQL_DATABASE: novyru
       MYSQL_USER: novyru_app
       MYSQL_ROOT_HOST: localhost
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/root_password
       MYSQL_PASSWORD_FILE: /run/secrets/app_password
+
+    ports:
+      - "127.0.0.1:3307:3306"
+
     secrets:
       - root_password
       - app_password
-    ports:
-      - "127.0.0.1:3307:3306"
+
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/init:/docker-entrypoint-initdb.d:ro
@@ -20,6 +24,7 @@ services:
 secrets:
   root_password:
     file: ./secrets/root_password.txt
+
   app_password:
     file: ./secrets/app_password.txt
 
