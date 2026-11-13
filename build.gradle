@@ -25,8 +25,9 @@ dependencies {
 	implementation 'at.favre.lib:bcrypt:0.10.2'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	implementation 'org.jdbi:jdbi3-core:3.55.0'
-	implementation 'org.postgresql:postgresql:42.7.14'
+	runtimeOnly 'com.mysql:mysql-connector-j'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
