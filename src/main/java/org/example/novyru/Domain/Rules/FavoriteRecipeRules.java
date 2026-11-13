@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public final class FavoriteRecipeRules implements IFavoriteRecipeRules {
 
-    private FavoriteRecipeRules(){
+    public FavoriteRecipeRules(){
     }
 
     // GENERAL ID VALIDATION

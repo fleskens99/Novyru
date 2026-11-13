@@ -1,16 +1,16 @@
-package org.example.novyru.Domain.Entities;
+package org.example.novyru.Infrastructure.Entities;
 
 
 import lombok.Data;
 import java.util.List;
 
 @Data
-public class Recipe {
+public class RecipeEntity {
 
     private int id;
     private String name;
     private String description;
-    private List<Ingredient> ingredients;
+    private List<IngredientEntity> ingredients;
     private List<String> instructions;
     private String difficulty;
 

@@ -1,49 +1,55 @@
+
 package org.example.novyru.Infrastructure.Repositories;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
+import org.example.novyru.Domain.Models.User;
+import org.example.novyru.Infrastructure.Entities.UserEntity;
+import org.example.novyru.Infrastructure.Mappers.UserMapper;
 
 import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.Optional;
 
 public class UserRepository implements IUserRepository {
 
     private final Jdbi jdbi;
+    private final UserMapper userMapper;
 
-    public UserRepository(DataSource dataSource) {
+    public UserRepository(
+            DataSource dataSource,
+            UserMapper userMapper
+    ) {
         this.jdbi = Jdbi.create(dataSource);
+        this.userMapper = userMapper;
     }
 
-    // GET PASSWORD HASH
+    // FIND USER BY EMAIL
     @Override
-    public Optional<String> findPasswordHashByEmail(String email) {
+    public Optional<User> findByEmail(String email) {
 
         return jdbi.withHandle(handle ->
                 handle.createQuery("""
-                        SELECT password_hash
+                        SELECT id, name, email, password_hash
                         FROM users
                         WHERE email = :email
                         """)
                         .bind("email", email)
-                        .mapTo(String.class)
-                        .findOne()
-        );
-    }
 
-    // GET USER NAME
-    @Override
-    public Optional<String> findNameByEmail(String email) {
+                        // SQL row -> Infrastructure Entity
+                        .map((rs, ctx) -> new UserEntity(
+                                rs.getLong("id"),
+                                rs.getString("name"),
+                                rs.getString("email"),
+                                rs.getString("password_hash")
+                        ))
 
-        return jdbi.withHandle(handle ->
-                handle.createQuery("""
-                        SELECT name
-                        FROM users
-                        WHERE email = :email
-                        """)
-                        .bind("email", email)
-                        .mapTo(String.class)
                         .findOne()
+
+                        // Entity -> Domain Model
+                        .map(userMapper::toModel)
         );
     }
 
