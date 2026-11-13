@@ -47,30 +47,27 @@ public class UserRepository implements IUserRepository {
         );
     }
 
-    // SAVE USER
     @Override
     public boolean save(
             String name,
             String passwordHash,
             String email
     ) {
-
         int rows = jdbi.withHandle(handle ->
                 handle.createUpdate("""
-                        INSERT INTO users
-                            (name, email, password_hash)
-                        VALUES
-                            (:name, :email, :passwordHash)
-                        ON CONFLICT (email) DO NOTHING
-                        """)
+                    INSERT INTO users
+                        (name, email, password_hash)
+                    VALUES
+                        (:name, :email, :passwordHash)
+                    ON DUPLICATE KEY UPDATE
+                        email = email
+                    """)
                         .bind("name", name)
                         .bind("email", email)
                         .bind("passwordHash", passwordHash)
                         .execute()
         );
 
-        // True when the user was inserted.
-        // False when the email already exists.
         return rows == 1;
     }
 }

@@ -14,16 +14,18 @@ public class FavoriteRecipeRepository implements IFavoriteRecipeRepository {
         this.jdbi = Jdbi.create(dataSource);
     }
 
-    // ADD A RECIPE TO FAVORITES
     @Override
     public boolean addFavorite(int userId, int recipeId) {
 
         int rows = jdbi.withHandle(handle ->
                 handle.createUpdate("""
-                        INSERT INTO favorite (user_id, recipe_id)
-                        VALUES (:userId, :recipeId)
-                        ON CONFLICT (user_id, recipe_id) DO NOTHING
-                        """)
+                    INSERT INTO favorite
+                        (user_id, recipe_id)
+                    VALUES
+                        (:userId, :recipeId)
+                    ON DUPLICATE KEY UPDATE
+                        recipe_id = recipe_id
+                    """)
                         .bind("userId", userId)
                         .bind("recipeId", recipeId)
                         .execute()
