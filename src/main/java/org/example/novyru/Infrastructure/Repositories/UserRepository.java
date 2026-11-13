@@ -53,44 +53,27 @@ public class UserRepository implements IUserRepository {
         );
     }
 
-    // SAVE USER
     @Override
-    public boolean save(User user) {
+    public boolean save(
+            String name,
+            String passwordHash,
+            String email
+    ) {
+        int rows = jdbi.withHandle(handle ->
+                handle.createUpdate("""
+                    INSERT INTO users
+                        (name, email, password_hash)
+                    VALUES
+                        (:name, :email, :passwordHash)
+                    ON DUPLICATE KEY UPDATE
+                        email = email
+                    """)
+                        .bind("name", name)
+                        .bind("email", email)
+                        .bind("passwordHash", passwordHash)
+                        .execute()
+        );
 
-        // Domain Model -> Infrastructure Entity
-        UserEntity entity = userMapper.toEntity(user);
-
-        try {
-            int rows = jdbi.withHandle(handle ->
-                    handle.createUpdate("""
-                            INSERT INTO users
-                                (name, email, password_hash)
-                            VALUES
-                                (:name, :email, :passwordHash)
-                            """)
-                            .bind("name", entity.getName())
-                            .bind("email", entity.getEmail())
-                            .bind("passwordHash", entity.getPasswordHash())
-                            .execute()
-            );
-
-            return rows == 1;
-
-        } catch (UnableToExecuteStatementException e) {
-
-            // MySQL error 1062 = Duplicate key.
-            for (Throwable cause = e;
-                 cause != null;
-                 cause = cause.getCause()) {
-
-                if (cause instanceof SQLException sqlException
-                        && sqlException.getErrorCode() == 1062) {
-                    return false;
-                }
-            }
-
-            // Other database errors must not be ignored.
-            throw e;
-        }
+        return rows == 1;
     }
 }

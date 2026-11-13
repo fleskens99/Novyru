@@ -1,4 +1,3 @@
-
 package org.example.novyru.Application.Config;
 
 import org.springframework.context.annotation.Bean;
