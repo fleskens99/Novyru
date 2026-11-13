@@ -1,4 +1,3 @@
-
 package org.example.novyru.ServiceTests;
 
 import org.example.novyru.Application.Services.FavoriteRecipeService;
@@ -21,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,15 +104,25 @@ class FavoriteRecipeServiceTest {
     @Test
     void addFavorite_WithInvalidRecipeId_ShouldThrowException() {
 
-        doThrow(new InvalidIdException("Recipe ID"))
-                .when(favoriteRules)
-                .validateId(0, "Recipe ID");
+        doAnswer(invocation -> {
+            int id = invocation.getArgument(0);
+            String label = invocation.getArgument(1);
+
+            if (id == 0 && "Recipe ID".equals(label)) {
+                throw new InvalidIdException("Recipe ID");
+            }
+
+            return null;
+        }).when(favoriteRules)
+                .validateId(anyInt(), anyString());
 
         assertThrows(
                 InvalidIdException.class,
                 () -> favoriteRecipeService.addFavorite(USER_ID, 0)
         );
 
+        verify(favoriteRules).validateId(USER_ID, "User ID");
+        verify(favoriteRules).validateId(0, "Recipe ID");
         verifyNoInteractions(favoriteRepository);
     }
 
@@ -209,14 +219,28 @@ class FavoriteRecipeServiceTest {
     @Test
     void isFavorite_WithInvalidRecipeId_ShouldThrowException() {
 
-        doThrow(new InvalidIdException("Recipe ID"))
-                .when(favoriteRules)
-                .validateId(0, "Recipe ID");
+        doAnswer(invocation -> {
+            int id = invocation.getArgument(0);
+            String label = invocation.getArgument(1);
+
+            if (id == 0 && label.equals("Recipe ID")) {
+                throw new InvalidIdException("Recipe ID");
+            }
+
+            return null;
+        }).when(favoriteRules)
+                .validateId(anyInt(), anyString());
 
         assertThrows(
                 InvalidIdException.class,
                 () -> favoriteRecipeService.isFavorite(USER_ID, 0)
         );
+
+        verify(favoriteRules)
+                .validateId(USER_ID, "User ID");
+
+        verify(favoriteRules)
+                .validateId(0, "Recipe ID");
 
         verifyNoInteractions(favoriteRepository);
     }

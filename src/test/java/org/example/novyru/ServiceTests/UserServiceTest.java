@@ -1,10 +1,10 @@
-
 package org.example.novyru.ServiceTests;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
 import org.example.novyru.Application.DTOs.UserDTOs.LoginUserDto;
 import org.example.novyru.Application.DTOs.UserDTOs.RegisterUserDto;
+import org.example.novyru.Application.DTOs.UserDTOs.UserResponseDto;
 import org.example.novyru.Application.Mappers.UserDtoMapper;
 import org.example.novyru.Application.Services.UserService;
 
@@ -19,8 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mapstruct.factory.Mappers;
+
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -35,9 +40,7 @@ class UserServiceTest {
     @Mock
     private IUserRules userRules;
 
-    @Mock
     private UserDtoMapper userDtoMapper;
-
     private UserService userService;
 
     private static final String NAME = "Alex";
@@ -46,6 +49,9 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use the actual generated MapStruct mapper.
+        userDtoMapper = Mappers.getMapper(UserDtoMapper.class);
+
         userService = new UserService(
                 userRepository,
                 userRules,
@@ -54,7 +60,7 @@ class UserServiceTest {
     }
 
     // ==========================================
-    // TEST HELPERS
+    // HELPERS
     // ==========================================
 
     private RegisterUserDto validRegistration() {
@@ -67,17 +73,12 @@ class UserServiceTest {
 
     private String createPasswordHash() {
         return BCrypt.withDefaults()
-                .hashToString(
-                        12,
-                        PASSWORD.toCharArray()
-                );
+                .hashToString(12, PASSWORD.toCharArray());
     }
 
-    private User createMockUser() {
+    private User createLoginUser() {
         User user = mock(User.class);
 
-        when(user.getName()).thenReturn(NAME);
-        when(user.getEmail()).thenReturn(EMAIL);
         when(user.getPasswordHash())
                 .thenReturn(createPasswordHash());
 
@@ -94,10 +95,14 @@ class UserServiceTest {
         when(userRepository.save(any(User.class)))
                 .thenReturn(true);
 
-        userService.registerUser(validRegistration());
+        UserResponseDto result =
+                userService.registerUser(validRegistration());
 
-        verify(userRepository, times(1))
-                .save(any(User.class));
+        assertNotNull(result);
+        assertEquals(NAME, result.getName());
+        assertEquals(EMAIL, result.getEmail());
+
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
@@ -109,9 +114,61 @@ class UserServiceTest {
         userService.registerUser(validRegistration());
 
         verify(userRules).validateRegistration(
-                eq(NAME),
-                eq(EMAIL),
-                eq(PASSWORD)
+                NAME,
+                EMAIL,
+                PASSWORD
+        );
+    }
+
+    @Test
+    void registerUser_ShouldHashPasswordBeforeSaving() {
+
+        when(userRepository.save(any(User.class)))
+                .thenReturn(true);
+
+        userService.registerUser(validRegistration());
+
+        ArgumentCaptor<User> captor =
+                ArgumentCaptor.forClass(User.class);
+
+        verify(userRepository).save(captor.capture());
+
+        String savedHash =
+                captor.getValue().getPasswordHash();
+
+        assertNotEquals(PASSWORD, savedHash);
+
+        assertTrue(
+                BCrypt.verifyer()
+                        .verify(
+                                PASSWORD.toCharArray(),
+                                savedHash
+                        ).verified
+        );
+    }
+
+    @Test
+    void registerUser_ShouldNormalizeNameAndEmail() {
+
+        when(userRepository.save(any(User.class)))
+                .thenReturn(true);
+
+        RegisterUserDto dto = new RegisterUserDto(
+                "  Alex  ",
+                "  ALEX@EXAMPLE.COM  ",
+                PASSWORD
+        );
+
+        UserResponseDto result =
+                userService.registerUser(dto);
+
+        assertEquals(NAME, result.getName());
+        assertEquals(EMAIL, result.getEmail());
+
+        verify(userRules).validateRegistration(
+                "  Alex  ",
+                EMAIL,
+                PASSWORD
         );
     }
 
@@ -123,9 +180,7 @@ class UserServiceTest {
 
         assertThrows(
                 DuplicateEmailException.class,
-                () -> userService.registerUser(
-                        validRegistration()
-                )
+                () -> userService.registerUser(validRegistration())
         );
     }
 
@@ -141,9 +196,9 @@ class UserServiceTest {
         doThrow(new InvalidRegistrationException(
                 "Invalid registration data"
         )).when(userRules).validateRegistration(
-                anyString(),
-                anyString(),
-                anyString()
+                NAME,
+                "invalid-email",
+                PASSWORD
         );
 
         assertThrows(
@@ -166,9 +221,9 @@ class UserServiceTest {
         doThrow(new InvalidRegistrationException(
                 "Password is too short"
         )).when(userRules).validateRegistration(
-                anyString(),
-                anyString(),
-                anyString()
+                NAME,
+                EMAIL,
+                "123"
         );
 
         assertThrows(
@@ -201,9 +256,7 @@ class UserServiceTest {
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> userService.registerUser(
-                        validRegistration()
-                )
+                () -> userService.registerUser(validRegistration())
         );
 
         assertEquals(
@@ -211,15 +264,91 @@ class UserServiceTest {
                 exception.getMessage()
         );
 
-        assertSame(
-                databaseError,
-                exception.getCause()
-        );
+        assertSame(databaseError, exception.getCause());
     }
 
     // ==========================================
     // LOGIN TESTS
     // ==========================================
+
+    @Test
+    void loginUser_WithValidCredentials_ShouldLogin() {
+
+        User user = createLoginUser();
+
+        when(user.getName()).thenReturn(NAME);
+        when(user.getEmail()).thenReturn(EMAIL);
+
+        when(userRepository.findByEmail(EMAIL))
+                .thenReturn(Optional.of(user));
+
+        UserResponseDto result = userService.loginUser(
+                new LoginUserDto(EMAIL, PASSWORD)
+        );
+
+        assertNotNull(result);
+        assertEquals(NAME, result.getName());
+        assertEquals(EMAIL, result.getEmail());
+    }
+
+    @Test
+    void loginUser_ShouldNormalizeEmail() {
+
+        User user = createLoginUser();
+
+        when(user.getName()).thenReturn(NAME);
+        when(user.getEmail()).thenReturn(EMAIL);
+
+        when(userRepository.findByEmail(EMAIL))
+                .thenReturn(Optional.of(user));
+
+        UserResponseDto result = userService.loginUser(
+                new LoginUserDto(
+                        "  ALEX@EXAMPLE.COM  ",
+                        PASSWORD
+                )
+        );
+
+        assertEquals(EMAIL, result.getEmail());
+
+        verify(userRepository).findByEmail(EMAIL);
+    }
+
+    @Test
+    void loginUser_WithWrongPassword_ShouldThrowException() {
+
+        User user = createLoginUser();
+
+        when(userRepository.findByEmail(EMAIL))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.loginUser(
+                        new LoginUserDto(
+                                EMAIL,
+                                "WrongPassword123!"
+                        )
+                )
+        );
+    }
+
+    @Test
+    void loginUser_WithUnknownEmail_ShouldThrowException() {
+
+        when(userRepository.findByEmail("unknown@example.com"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.loginUser(
+                        new LoginUserDto(
+                                "unknown@example.com",
+                                PASSWORD
+                        )
+                )
+        );
+    }
 
     @Test
     void loginUser_WithNullDto_ShouldThrowException() {
@@ -235,14 +364,11 @@ class UserServiceTest {
     @Test
     void loginUser_WithEmptyEmail_ShouldThrowException() {
 
-        LoginUserDto dto = new LoginUserDto(
-                "",
-                PASSWORD
-        );
-
         assertThrows(
                 InvalidCredentialsException.class,
-                () -> userService.loginUser(dto)
+                () -> userService.loginUser(
+                        new LoginUserDto("", PASSWORD)
+                )
         );
 
         verifyNoInteractions(userRepository);
@@ -251,16 +377,37 @@ class UserServiceTest {
     @Test
     void loginUser_WithEmptyPassword_ShouldThrowException() {
 
-        LoginUserDto dto = new LoginUserDto(
-                EMAIL,
-                ""
-        );
-
         assertThrows(
                 InvalidCredentialsException.class,
-                () -> userService.loginUser(dto)
+                () -> userService.loginUser(
+                        new LoginUserDto(EMAIL, "")
+                )
         );
 
         verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void loginUser_WhenDatabaseFails_ShouldThrowException() {
+
+        RuntimeException databaseError =
+                new RuntimeException("Database unavailable");
+
+        when(userRepository.findByEmail(EMAIL))
+                .thenThrow(databaseError);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> userService.loginUser(
+                        new LoginUserDto(EMAIL, PASSWORD)
+                )
+        );
+
+        assertEquals(
+                "Login could not be completed.",
+                exception.getMessage()
+        );
+
+        assertSame(databaseError, exception.getCause());
     }
 }
