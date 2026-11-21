@@ -12,7 +12,6 @@ import org.mapstruct.BeanMapping;
 @Mapper(componentModel = "spring")
 public interface UserDtoMapper {
 
-    // Register DTO -> Domain Model
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "name", expression = "java(dto.getName().trim())")
     @Mapping(target = "email", source = "normalizedEmail")
@@ -23,8 +22,8 @@ public interface UserDtoMapper {
             String passwordHash
     );
 
-    // Domain Model -> Safe response DTO
     @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
     @Mapping(target = "email", source = "email")
     UserResponseDto toResponse(User user);

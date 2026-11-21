@@ -1,4 +1,3 @@
-
 package org.example.novyru.Infrastructure.Repositories;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IUserRepository;
@@ -6,79 +5,74 @@ import org.example.novyru.Domain.Models.User;
 import org.example.novyru.Infrastructure.Entities.UserEntity;
 import org.example.novyru.Infrastructure.Mappers.UserMapper;
 
-import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 
-import javax.sql.DataSource;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.sql.SQLException;
 import java.util.Optional;
 
+@Repository
 public class UserRepository implements IUserRepository {
 
-    private final Jdbi jdbi;
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private final UserMapper userMapper;
+    private final TransactionTemplate transactionTemplate;
 
     public UserRepository(
-            DataSource dataSource,
-            UserMapper userMapper
+            UserMapper userMapper,
+            PlatformTransactionManager transactionManager
     ) {
-        this.jdbi = Jdbi.create(dataSource);
         this.userMapper = userMapper;
+        this.transactionTemplate =
+                new TransactionTemplate(transactionManager);
     }
 
     // FIND USER BY EMAIL
     @Override
     public Optional<User> findByEmail(String email) {
 
-        return jdbi.withHandle(handle ->
-                handle.createQuery("""
-                        SELECT id, name, email, password_hash
-                        FROM users
-                        WHERE email = :email
-                        """)
-                        .bind("email", email)
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserEntity> query =
+                cb.createQuery(UserEntity.class);
 
-                        // SQL row -> Infrastructure Entity
-                        .map((rs, ctx) -> new UserEntity(
-                                rs.getLong("id"),
-                                rs.getString("name"),
-                                rs.getString("email"),
-                                rs.getString("password_hash")
-                        ))
+        Root<UserEntity> user = query.from(UserEntity.class);
 
-                        .findOne()
+        query.select(user)
+                .where(cb.equal(user.get("email"), email));
 
-                        // Entity -> Domain Model
-                        .map(userMapper::toModel)
-        );
+        return entityManager.createQuery(query)
+                .setMaxResults(1)
+                .getResultStream()
+                .findFirst()
+                .map(userMapper::toModel);
     }
 
     // SAVE USER
     @Override
     public boolean save(User user) {
 
-        // Domain Model -> Infrastructure Entity
         UserEntity entity = userMapper.toEntity(user);
 
         try {
-            int rows = jdbi.withHandle(handle ->
-                    handle.createUpdate("""
-                            INSERT INTO users
-                                (name, email, password_hash)
-                            VALUES
-                                (:name, :email, :passwordHash)
-                            """)
-                            .bind("name", entity.getName())
-                            .bind("email", entity.getEmail())
-                            .bind("passwordHash", entity.getPasswordHash())
-                            .execute()
-            );
+            transactionTemplate.executeWithoutResult(status -> {
+                entityManager.persist(entity);
+                entityManager.flush();
+            });
 
-            return rows == 1;
+            return true;
 
-        } catch (UnableToExecuteStatementException e) {
+        } catch (DataIntegrityViolationException e) {
 
-            // MySQL error 1062 = Duplicate key.
             for (Throwable cause = e;
                  cause != null;
                  cause = cause.getCause()) {
@@ -89,7 +83,6 @@ public class UserRepository implements IUserRepository {
                 }
             }
 
-            // Other database errors must not be ignored.
             throw e;
         }
     }

@@ -1,89 +1,110 @@
 package org.example.novyru.Infrastructure.Repositories;
 
 import org.example.novyru.Domain.Interfaces.Repositories.IFavoriteRecipeRepository;
-import org.jdbi.v3.core.Jdbi;
+import org.example.novyru.Infrastructure.Entities.FavoriteEntity;
+import org.example.novyru.Infrastructure.Entities.FavoriteIdEntity;
 
-import javax.sql.DataSource;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
+@Repository
+@Transactional
 public class FavoriteRecipeRepository implements IFavoriteRecipeRepository {
 
-    private final Jdbi jdbi;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    public FavoriteRecipeRepository(DataSource dataSource) {
-        this.jdbi = Jdbi.create(dataSource);
-    }
-
-    // ADD A RECIPE TO FAVORITES
     @Override
-    public boolean addFavorite(int userId, int recipeId) {
+    public boolean addFavorite(
+            int userId,
+            int recipeId,
+            String recipeJson
+    ) {
+        FavoriteIdEntity id = new FavoriteIdEntity(userId, recipeId);
 
-        int rows = jdbi.withHandle(handle ->
-                handle.createUpdate("""
-                        INSERT INTO favorite (user_id, recipe_id)
-                        VALUES (:userId, :recipeId)
-                        ON CONFLICT (user_id, recipe_id) DO NOTHING
-                        """)
-                        .bind("userId", userId)
-                        .bind("recipeId", recipeId)
-                        .execute()
-        );
+        FavoriteEntity favorite = entityManager.find(FavoriteEntity.class, id);
 
-        return rows == 1;
+        if (favorite == null) {
+            entityManager.persist(
+                    new FavoriteEntity(userId, recipeId, recipeJson)
+            );
+        } else {
+            favorite.setRecipeJson(recipeJson);
+        }
+
+        return true;
     }
 
-    // REMOVE A RECIPE FROM FAVORITES
     @Override
     public boolean removeFavorite(int userId, int recipeId) {
-
-        int rows = jdbi.withHandle(handle ->
-                handle.createUpdate("""
-                        DELETE FROM favorite
-                        WHERE user_id = :userId
-                        AND recipe_id = :recipeId
-                        """)
-                        .bind("userId", userId)
-                        .bind("recipeId", recipeId)
-                        .execute()
+        FavoriteEntity favorite = entityManager.find(
+                FavoriteEntity.class,
+                new FavoriteIdEntity(userId, recipeId)
         );
 
-        return rows == 1;
+        if (favorite == null) {
+            return false;
+        }
+
+        entityManager.remove(favorite);
+        return true;
     }
 
-    // CHECK IF A RECIPE IS FAVORITED
     @Override
+    @Transactional(readOnly = true)
     public boolean isFavorite(int userId, int recipeId) {
-
-        return jdbi.withHandle(handle ->
-                handle.createQuery("""
-                        SELECT EXISTS (
-                            SELECT 1
-                            FROM favorite
-                            WHERE user_id = :userId
-                            AND recipe_id = :recipeId
-                        )
-                        """)
-                        .bind("userId", userId)
-                        .bind("recipeId", recipeId)
-                        .mapTo(Boolean.class)
-                        .one()
-        );
+        return entityManager.find(
+                FavoriteEntity.class,
+                new FavoriteIdEntity(userId, recipeId)
+        ) != null;
     }
 
-    // GET ALL FAVORITE RECIPE IDS FOR A USER
     @Override
+    @Transactional(readOnly = true)
     public List<Integer> findFavoriteRecipeIdsByUserId(int userId) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Integer> query = cb.createQuery(Integer.class);
+        Root<FavoriteEntity> favorite = query.from(FavoriteEntity.class);
 
-        return jdbi.withHandle(handle ->
-                handle.createQuery("""
-                        SELECT recipe_id
-                        FROM favorite
-                        WHERE user_id = :userId
-                        ORDER BY recipe_id
-                        """)
-                        .bind("userId", userId)
-                        .mapTo(Integer.class)
-                        .list()
-        );
+        query.select(favorite.get("id").get("recipeId"))
+                .where(cb.equal(
+                        favorite.get("id").get("userId"),
+                        userId
+                ))
+                .orderBy(cb.asc(
+                        favorite.get("id").get("recipeId")
+                ));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> findFavoriteRecipeJsonByUserId(int userId) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<String> query = cb.createQuery(String.class);
+        Root<FavoriteEntity> favorite = query.from(FavoriteEntity.class);
+
+        query.select(favorite.get("recipeJson"))
+                .where(
+                        cb.equal(
+                                favorite.get("id").get("userId"),
+                                userId
+                        ),
+                        cb.isNotNull(favorite.get("recipeJson"))
+                )
+                .orderBy(cb.asc(
+                        favorite.get("id").get("recipeId")
+                ));
+
+        return entityManager.createQuery(query).getResultList();
     }
 }

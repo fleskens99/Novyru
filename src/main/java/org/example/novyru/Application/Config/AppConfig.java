@@ -1,6 +1,7 @@
 
 package org.example.novyru.Application.Config;
 
+import org.example.novyru.Application.Services.ExternalRecipeService;
 import org.example.novyru.Application.Services.FavoriteRecipeService;
 import org.example.novyru.Application.Services.UserService;
 import org.example.novyru.Application.Mappers.UserDtoMapper;
@@ -26,30 +27,6 @@ import javax.sql.DataSource;
 
 @Configuration
 public class AppConfig {
-
-    // ===============================
-    // INFRASTRUCTURE REPOSITORIES
-    // ===============================
-
-    @Bean
-    public IUserRepository userRepository(
-            DataSource dataSource,
-            UserMapper userMapper
-    ) {
-        return new UserRepository(
-                dataSource,
-                userMapper
-        );
-    }
-
-    @Bean
-    public IFavoriteRecipeRepository favoriteRecipeRepository(
-            DataSource dataSource) {
-        return new FavoriteRecipeRepository(
-                dataSource
-        );
-    }
-
     // ===============================
     // APPLICATION SERVICES
     // ===============================
@@ -70,11 +47,14 @@ public class AppConfig {
     @Bean
     public FavoriteRecipeService favoriteRecipeService(
             IFavoriteRecipeRepository favoriteRecipeRepository,
-            IFavoriteRecipeRules favoriteRecipeRules
+            IFavoriteRecipeRules favoriteRecipeRules,
+            ExternalRecipeService externalRecipeService
     ) {
         return new FavoriteRecipeService(
                 favoriteRecipeRepository,
-                favoriteRecipeRules
+                favoriteRecipeRules,
+                externalRecipeService
         );
     }
+
 }

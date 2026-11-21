@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Locale;
 
-@Component
 @RequiredArgsConstructor
 public class UserService {
 
@@ -80,7 +79,11 @@ public class UserService {
             }
 
             // Domain Model -> Safe response DTO
-            return userDtoMapper.toResponse(user);
+            return new UserResponseDto(
+                    null,
+                    user.getName(),
+                    user.getEmail()
+            );
 
         } catch (DuplicateEmailException |
                  InvalidRegistrationException e) {

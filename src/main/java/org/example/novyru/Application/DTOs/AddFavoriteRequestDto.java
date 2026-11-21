@@ -1,4 +1,9 @@
 package org.example.novyru.Application.DTOs;
 
-public record AddFavoriteRequestDto(int recipeId) {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record AddFavoriteRequestDto(
+        int recipeId
+) {
 }

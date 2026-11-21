@@ -78,20 +78,16 @@ CREATE TABLE IF NOT EXISTS ingredient (
 
 
 -- 4. FAVORITE
+
 CREATE TABLE IF NOT EXISTS favorite (
                                         user_id INT NOT NULL,
                                         recipe_id INT NOT NULL,
+                                        recipe_json JSON NULL,
 
                                         PRIMARY KEY (user_id, recipe_id),
 
     CONSTRAINT fk_favorite_user
     FOREIGN KEY (user_id)
     REFERENCES users(id)
-    ON DELETE CASCADE,
-
-    CONSTRAINT fk_favorite_recipe
-    FOREIGN KEY (recipe_id)
-    REFERENCES recipe(id)
     ON DELETE CASCADE
-
     ) ENGINE=InnoDB;

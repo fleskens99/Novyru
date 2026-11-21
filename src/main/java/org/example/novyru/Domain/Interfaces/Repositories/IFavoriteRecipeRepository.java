@@ -1,10 +1,21 @@
+
 package org.example.novyru.Domain.Interfaces.Repositories;
 
 import java.util.List;
 
-public interface IFavoriteRecipeRepository  {
-    public boolean addFavorite(int userId, int recipeId);
-    public boolean removeFavorite(int userId, int recipeId);
-    public boolean isFavorite(int userId, int recipeId);
-    public List<Integer> findFavoriteRecipeIdsByUserId(int userId);
+public interface IFavoriteRecipeRepository {
+
+    boolean addFavorite(
+            int userId,
+            int recipeId,
+            String recipeJson
+    );
+
+    boolean removeFavorite(int userId, int recipeId);
+
+    boolean isFavorite(int userId, int recipeId);
+
+    List<Integer> findFavoriteRecipeIdsByUserId(int userId);
+
+    List<String> findFavoriteRecipeJsonByUserId(int userId);
 }

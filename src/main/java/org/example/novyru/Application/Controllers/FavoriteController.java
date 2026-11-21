@@ -3,9 +3,9 @@ package org.example.novyru.Application.Controllers;
 
 import lombok.RequiredArgsConstructor;
 
-import org.example.novyru.Application.Services.FavoriteRecipeService;
 import org.example.novyru.Application.DTOs.AddFavoriteRequestDto;
 import org.example.novyru.Application.DTOs.FavoriteStatusResponseDto;
+import org.example.novyru.Application.Services.FavoriteRecipeService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,7 @@ public class FavoriteController {
 
     private final FavoriteRecipeService favoriteRecipeService;
 
-    // ADD FAVORITE
+
     @PostMapping
     public ResponseEntity<Void> addFavorite(
             @PathVariable int userId,
@@ -39,39 +39,50 @@ public class FavoriteController {
         return ResponseEntity.created(location).build();
     }
 
-    // REMOVE FAVORITE
+
     @DeleteMapping("/{recipeId}")
     public ResponseEntity<Void> removeFavorite(
             @PathVariable int userId,
             @PathVariable int recipeId
     ) {
-        favoriteRecipeService.removeFavorite(userId, recipeId);
+        favoriteRecipeService.removeFavorite(
+                userId,
+                recipeId
+        );
 
         return ResponseEntity.noContent().build();
     }
 
-    // GET ALL FAVORITE RECIPE IDS
     @GetMapping
     public ResponseEntity<List<Integer>> getFavoriteRecipeIds(
             @PathVariable int userId
     ) {
-        List<Integer> favorites =
-                favoriteRecipeService.getFavoriteRecipeIds(userId);
-
-        return ResponseEntity.ok(favorites);
+        return ResponseEntity.ok(
+                favoriteRecipeService.getFavoriteRecipeIds(userId)
+        );
     }
 
-    // CHECK IF A RECIPE IS FAVORITED
+    @GetMapping("/recipes")
+    public ResponseEntity<List<Object>> getFavoriteRecipes(
+            @PathVariable int userId
+    ) {
+        return ResponseEntity.ok(
+                favoriteRecipeService.getFavoriteRecipes(userId)
+        );
+    }
+
     @GetMapping("/{recipeId}/status")
     public ResponseEntity<FavoriteStatusResponseDto> isFavorite(
             @PathVariable int userId,
             @PathVariable int recipeId
     ) {
-        boolean favorite =
-                favoriteRecipeService.isFavorite(userId, recipeId);
-
         return ResponseEntity.ok(
-                new FavoriteStatusResponseDto(favorite)
+                new FavoriteStatusResponseDto(
+                        favoriteRecipeService.isFavorite(
+                                userId,
+                                recipeId
+                        )
+                )
         );
     }
 }
